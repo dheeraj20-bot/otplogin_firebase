@@ -6,6 +6,7 @@ import { signOut } from "firebase/auth";
 import {  LogInIcon } from "lucide-react";
 import Link from "next/link";
 
+
 export default function Home() {
   const { user } = useAuth();
   return (
@@ -24,15 +25,10 @@ export default function Home() {
           Sign out
         </Button>
       ) : (
-        <Link href="/login">
+        <Link  href="/login">
           <Button className="mt-10">Sign In</Button>
         </Link>
       )}
-
-       <Link href="/login" className="text-white flex gap-3">
-       <p>Login</p>
-       <LogInIcon/>
-       </Link>
     </main>
   );
 }
