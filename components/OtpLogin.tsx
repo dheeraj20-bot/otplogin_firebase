@@ -22,7 +22,7 @@ const OtpLogin = () => {
 
   const [phoneNumber, setPhoneNumber] = useState("");
   console.log(phoneNumber);
-  
+
   const [otp, setOtp] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState("");
@@ -31,74 +31,68 @@ const OtpLogin = () => {
     useState<RecaptchaVerifier | null>(null);
   const [confirmationResult, setConfirmationResult] =
     useState<ConfirmationResult | null>(null);
-  const [isPending,startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
 
-
-   useEffect(()=>{
-    let timer:NodeJS.Timeout;
-    if(resendCountdown >0){
-        timer= setTimeout(()=>setResendCountdown(resendCountdown-1),1000);
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (resendCountdown > 0) {
+      timer = setTimeout(() => setResendCountdown(resendCountdown - 1), 1000);
     }
 
-    return ()=>clearTimeout(timer);
-   },[resendCountdown]);
+    return () => clearTimeout(timer);
+  }, [resendCountdown]);
 
+  useEffect(() => {
+    const recaptchaVerifier = new RecaptchaVerifier(
+      auth,
+      "recaptcha-container",
+      {
+        size: "invisible",
+      }
+    );
 
-   useEffect(()=>{
-   const recaptchaVerifier = new RecaptchaVerifier(
-    auth,
-    "recaptcha-container",
-    {
-        size:"invisible",
-    }
-   );
+    setRecaptchaVerifier(recaptchaVerifier);
+    return () => {
+      recaptchaVerifier.clear();
+    };
+  }, [auth]);
 
-   setRecaptchaVerifier(recaptchaVerifier);
-   return ()=>{
-    recaptchaVerifier.clear()
-   }
-   },[auth]);
+  const requestOtp = async (e?: FormEvent<HTMLFormElement>) => {
+    e?.preventDefault();
+    setResendCountdown(60);
 
+    startTransition(async () => {
+      setError("");
 
-   const requestOtp = async(e?:FormEvent<HTMLFormElement>)=>{
-          e?.preventDefault();
-          setResendCountdown(60);
-        
-          startTransition(async()=>{
-            setError("");
+      if (!recaptchaVerifier) {
+        return setError("RecaptchaVerifier is not initialized");
+      }
 
-            if(!recaptchaVerifier){
-                return setError("RecaptchaVerifier is not initialized")
-            }
-                
-             try {
-                const confirmationResult = await signInWithPhoneNumber(
-                    auth,phoneNumber,recaptchaVerifier
-                )
+      try {
+        const confirmationResult = await signInWithPhoneNumber(
+          auth,
+          phoneNumber,
+          recaptchaVerifier
+        );
 
-                setConfirmationResult(confirmationResult)
-                setSuccess("OTP sent successfully.")
-                
-             } catch (error:any) {
-                 console.log(error);
-                 setResendCountdown(0);
-                 
-                 if(error.code ==='auth/invalid-phone-number'){
-                    setError("Invalid phone number, Please check the number.")
-                 } else if (error.code ==="auth/too-many-requests"){
-                    setError("Too many requests, Please Try again")
-                 }else {
-                    setError("Failed to send OTP. Please try again")
-                 }
-             }
+        setConfirmationResult(confirmationResult);
+        setSuccess("OTP sent successfully.");
+      } catch (error: any) {
+        console.log(error);
+        setResendCountdown(0);
 
-          })
+        if (error.code === "auth/invalid-phone-number") {
+          setError("Invalid phone number, Please check the number.");
+        } else if (error.code === "auth/too-many-requests") {
+          setError("Too many requests, Please Try again");
+        } else {
+          setError("Failed to send OTP. Please try again");
+        }
+      }
+    });
+  };
 
-          
-          
-   }
-
-   const loadingIndicator = (
+  const loadingIndicator = (
     <div role="status" className="flex justify-center">
       <svg
         aria-hidden="true"
@@ -119,40 +113,56 @@ const OtpLogin = () => {
       <span className="sr-only">Loading...</span>
     </div>
   );
-   
 
   return (
     <div className="text-white">
-       {
-        !confirmationResult && (
-            <form onSubmit={requestOtp}>
-                <Input
-                className="text-white bg-slate-700"
-                type="tel"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}   
-                />
-                <p className="text-xs text-gray-200 mt-2">
-                    Please enter your number with the country code (i.e +91 for IND)
-                </p>
-            </form>
-        )
-       }
+      {!confirmationResult && (
+        <form onSubmit={requestOtp}>
+          <Input
+            className="text-white bg-slate-700"
+            type="tel"
+            value={phoneNumber}
+            onChange={(e) => setPhoneNumber(e.target.value)}
+          />
+          <p className="text-xs text-gray-200 mt-2">
+            Please enter your number with the country code (i.e +91 for IND)
+          </p>
+        </form>
+      )}
 
-       <Button
-       disabled={!phoneNumber || isPending || resendCountdown>0}
-       onClick={()=>requestOtp()}
-       className="mt-5 text-white"
-       > 
-       {resendCountdown>0?`Resend OTP in ${resendCountdown}`:isPending?"Sending OTP":"Send OTP"}
-       </Button>
-       <div className="p-10 text-center">
-            {error && <p className=" text-red-400">{error}</p> }
-            {success && <p className="text-green-400">{success}</p> }
-       </div>
-        <div id="recaptcha-container"/>
-        {isPending && loadingIndicator}
-    
+      {confirmationResult && (
+        <InputOTP maxLength={6} value={otp} onChange={(value)=>setOtp(value)}>
+          <InputOTPGroup>
+            <InputOTPSlot index={0} />
+            <InputOTPSlot index={1} />
+            <InputOTPSlot index={2} />
+          </InputOTPGroup>
+          <InputOTPSeparator />
+          <InputOTPGroup>
+            <InputOTPSlot index={3} />
+            <InputOTPSlot index={4} />
+            <InputOTPSlot index={5} />
+          </InputOTPGroup>
+        </InputOTP>
+      )}
+
+      <Button
+        disabled={!phoneNumber || isPending || resendCountdown > 0}
+        onClick={() => requestOtp()}
+        className="mt-5 text-white"
+      >
+        {resendCountdown > 0
+          ? `Resend OTP in ${resendCountdown}`
+          : isPending
+          ? "Sending OTP"
+          : "Send OTP"}
+      </Button>
+      <div className="p-10 text-center">
+        {error && <p className=" text-red-400">{error}</p>}
+        {success && <p className="text-green-400">{success}</p>}
+      </div>
+      <div id="recaptcha-container" />
+      {isPending && loadingIndicator}
     </div>
   );
 };
