@@ -1,5 +1,8 @@
 'use client'
 import { useAuth } from "@/components/AuthProvider";
+import { Button } from "@/components/ui/button";
+import { auth } from "@/firebase";
+import { signOut } from "firebase/auth";
 import {  LogInIcon } from "lucide-react";
 import Link from "next/link";
 
@@ -15,6 +18,16 @@ export default function Home() {
            You are not logged in
         </h2>
        )}
+
+      {user ? (
+        <Button onClick={() => signOut(auth)} className="mt-10">
+          Sign out
+        </Button>
+      ) : (
+        <Link href="/login">
+          <Button className="mt-10">Sign In</Button>
+        </Link>
+      )}
 
        <Link href="/login" className="text-white flex gap-3">
        <p>Login</p>
