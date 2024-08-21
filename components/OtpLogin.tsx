@@ -16,12 +16,12 @@ import React, { useEffect, useState, useTransition, FormEvent } from "react";
 import { Input } from "./ui/input";
 import { useRouter } from "next/navigation";
 import { Button } from "./ui/button";
+import { start } from "repl";
 
 const OtpLogin = () => {
   const router = useRouter();
 
   const [phoneNumber, setPhoneNumber] = useState("");
-  console.log(phoneNumber);
 
   const [otp, setOtp] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -56,6 +56,32 @@ const OtpLogin = () => {
       recaptchaVerifier.clear();
     };
   }, [auth]);
+
+  useEffect(() => {
+    const hasEnteredAllDigits = otp.length === 6;
+    if (hasEnteredAllDigits) {
+      verifyOtp();
+    }
+  }, [otp]);
+
+  const verifyOtp = async () => {
+    startTransition(async()=>{
+         setError("");
+
+         if(!confirmationResult){
+            setError("Please request OTP first")
+            return;
+         }
+         try {
+            await confirmationResult?.confirm(otp);
+            router.replace("/");
+         } catch (error) {
+             console.log(error);
+             setError("Failed to verify OTP. Please try again.")
+             
+         }
+    })
+  };
 
   const requestOtp = async (e?: FormEvent<HTMLFormElement>) => {
     e?.preventDefault();
@@ -93,7 +119,7 @@ const OtpLogin = () => {
   };
 
   const loadingIndicator = (
-    <div role="status" className="flex justify-center">
+    <div role="status" className="flex justify-center ">
       <svg
         aria-hidden="true"
         className="w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-green-600"
@@ -115,7 +141,7 @@ const OtpLogin = () => {
   );
 
   return (
-    <div className="text-white">
+    <div className="text-white flex items-center justify-center flex-col">
       {!confirmationResult && (
         <form onSubmit={requestOtp}>
           <Input
@@ -131,17 +157,17 @@ const OtpLogin = () => {
       )}
 
       {confirmationResult && (
-        <InputOTP maxLength={6} value={otp} onChange={(value)=>setOtp(value)}>
+        <InputOTP maxLength={6} value={otp} onChange={(value) => setOtp(value)}>
           <InputOTPGroup>
             <InputOTPSlot className="text-white" index={0} />
-            <InputOTPSlot className="text-white"  index={1} />
-            <InputOTPSlot className="text-white"  index={2} />
+            <InputOTPSlot className="text-white" index={1} />
+            <InputOTPSlot className="text-white" index={2} />
           </InputOTPGroup>
           <InputOTPSeparator />
           <InputOTPGroup>
-            <InputOTPSlot  className="text-white"  index={3} />
-            <InputOTPSlot className="text-white"  index={4} />
-            <InputOTPSlot className="text-white"  index={5} />
+            <InputOTPSlot className="text-white" index={3} />
+            <InputOTPSlot className="text-white" index={4} />
+            <InputOTPSlot className="text-white" index={5} />
           </InputOTPGroup>
         </InputOTP>
       )}
